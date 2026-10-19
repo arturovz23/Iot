@@ -1,0 +1,35 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <DHT.h>
+
+#define DHTPIN 4
+#define DHTTYPE DHT11
+
+const char* ssid = "TuRedWiFi";
+const char* password = "TuContrasena";
+const char* mqtt_server = "broker.hivemq.com";
+
+DHT dht(DHTPIN, DHTTYPE);
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  client.setServer(mqtt_server, 1883);
+}
+
+void loop() {
+  if (!client.connected()) {
+    client.connect("ESP32Client");
+  }
+  float temperatura = dht.readTemperature();
+  float humedad = dht.readHumidity();
+  if (!isnan(temperatura)) {
+    String payload = String(temperatura);
+    client.publish("ues/iot/temperatura", payload.c_str());
+  }
+  delay(5000);
+}
